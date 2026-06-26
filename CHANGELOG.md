@@ -18,3 +18,10 @@ Releases before this changelog was started are on the [releases page](https://gi
 - README now leads with a recorded terminal demo (`docs/assets/miseledger-ledger.svg`,
   reproducible from `miseledger-ledger.cast`): `init`, `import adapter`, `search`,
   and `stats` against a synthetic session.
+
+### Fixed
+
+- Commit the synthetic `testdata/exports/*.json` fixtures that an over-broad
+  `exports/` `.gitignore` rule had excluded, so `go test ./...` passes on a clean
+  checkout. CI and fresh clones were failing `TestCrawlProviderExports` and
+  `TestSessionsListAndSearch` on the missing files.
