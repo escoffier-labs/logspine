@@ -31,6 +31,7 @@ import (
 	"github.com/escoffier-labs/miseledger/internal/sources/openclaw"
 	"github.com/escoffier-labs/miseledger/internal/sources/opencode"
 	"github.com/escoffier-labs/miseledger/internal/sources/providerexports"
+	"github.com/escoffier-labs/miseledger/internal/toolpath"
 )
 
 var stdin io.Reader = os.Stdin
@@ -1006,6 +1007,9 @@ func cmdImportStationTrail(args []string, out, errw io.Writer) int {
 		return fatalf(errw, "usage: miseledger import stationtrail <source> <path-or-session-id> [--json] [--dry-run] [--limit N] [--since DATE] [--redact LIST]")
 	}
 	sourceKind, sourcePath := rest[0], rest[1]
+	if err := toolpath.Require("stationtrail", toolpath.HintStationTrail); err != nil {
+		return fatalf(errw, "import stationtrail: %s", err)
+	}
 	if bools["dry-run"] {
 		cmdArgs := []string{sourceKind, sourcePath, "--dry-run", "--json"}
 		if values["limit"] != "" {
@@ -1027,7 +1031,14 @@ func cmdImportStationTrail(args []string, out, errw io.Writer) int {
 			if ctx.Err() == context.DeadlineExceeded {
 				return fatalf(errw, "import stationtrail: timed out after %s", externalScannerTimeout)
 			}
-			return fatalf(errw, "import stationtrail: %s", strings.TrimSpace(stderr.String()))
+			if wrap := toolpath.WrapExecErr("stationtrail", toolpath.HintStationTrail, err); wrap != err {
+				return fatalf(errw, "import stationtrail: %s", wrap)
+			}
+			msg := strings.TrimSpace(stderr.String())
+			if msg == "" {
+				msg = err.Error()
+			}
+			return fatalf(errw, "import stationtrail: %s", msg)
 		}
 		if bools["json"] {
 			_, _ = out.Write(b)
@@ -1064,7 +1075,8 @@ type stationTrailCapabilities struct {
 
 // stationTrailCaps queries the stationtrail binary's capabilities. ok is false
 // when the binary is too old to support the command (we then proceed without a
-// compatibility guarantee rather than blocking).
+// compatibility guarantee rather than blocking). Missing-binary is handled by
+// toolpath.Require at the import entrypoints before this is consulted.
 func stationTrailCaps() (stationTrailCapabilities, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -1109,6 +1121,9 @@ func evalStationTrailCompat(caps stationTrailCapabilities, ok bool, sourceKind s
 }
 
 func runStationTrailImport(db *sql.DB, sourceKind, sourcePath string, values map[string]string) (ingest.AdapterResult, stationTrailSummary, error) {
+	if err := toolpath.Require("stationtrail", toolpath.HintStationTrail); err != nil {
+		return ingest.AdapterResult{}, stationTrailSummary{}, err
+	}
 	if err := checkStationTrailCompat(sourceKind); err != nil {
 		return ingest.AdapterResult{}, stationTrailSummary{}, err
 	}
@@ -1139,7 +1154,7 @@ func runStationTrailImport(db *sql.DB, sourceKind, sourcePath string, values map
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		return ingest.AdapterResult{}, stationTrailSummary{}, err
+		return ingest.AdapterResult{}, stationTrailSummary{}, toolpath.WrapExecErr("stationtrail", toolpath.HintStationTrail, err)
 	}
 	result, importErr := ingest.ImportAdapterReader(db, stdout, "stationtrail://"+sourceKind+"/"+sourcePath, sourceKind)
 	waitErr := cmd.Wait()
