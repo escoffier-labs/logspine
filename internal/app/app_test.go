@@ -1805,3 +1805,59 @@ func TestMissingExternalToolPresentBinaryUnchanged(t *testing.T) {
 		t.Fatalf("inserted = %v, want 2 with binary present: %v", out["inserted_items"], out)
 	}
 }
+
+func TestDoctorWrapperTools(t *testing.T) {
+	withTempHome(t)
+	runOK(t, "init")
+
+	binDir := t.TempDir()
+
+	// Create mock binaries for found tools: stationtrail and discrawl
+	for _, bin := range []string{"stationtrail", "discrawl"} {
+		script := filepath.Join(binDir, bin)
+		if err := os.WriteFile(script, []byte("#!/bin/sh\n"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Set PATH to only include binDir, so only stationtrail and discrawl are found
+	t.Setenv("PATH", binDir)
+
+	got := runJSON(t, "doctor", "--json")
+	if got["ok"] != true {
+		t.Fatalf("doctor not ok: %v", got)
+	}
+
+	checks := got["checks"].([]any)
+	var wrapperToolsCheck map[string]any
+
+	for _, raw := range checks {
+		check := raw.(map[string]any)
+		if check["name"] == "wrapper_tools" {
+			wrapperToolsCheck = check
+			break
+		}
+	}
+
+	if wrapperToolsCheck == nil {
+		t.Fatalf("wrapper_tools check not found in doctor output: %v", checks)
+	}
+
+	detail := wrapperToolsCheck["detail"].(string)
+
+	// Should find stationtrail and discrawl
+	if !strings.Contains(detail, "stationtrail") {
+		t.Fatalf("wrapper_tools detail missing stationtrail: %s", detail)
+	}
+	if !strings.Contains(detail, "discrawl") {
+		t.Fatalf("wrapper_tools detail missing discrawl: %s", detail)
+	}
+
+	// Should show as missing for other tools
+	missingTools := []string{"sourceharvest", "opencode", "gitcrawl", "slacrawl", "graincrawl", "notcrawl", "mailcrawl", "telecrawl"}
+	for _, tool := range missingTools {
+		if !strings.Contains(detail, tool) {
+			t.Fatalf("wrapper_tools detail missing %s: %s", tool, detail)
+		}
+	}
+}

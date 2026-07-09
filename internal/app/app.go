@@ -244,6 +244,8 @@ func cmdDoctor(args []string, out, errw io.Writer) int {
 	add("schema", versionErr == nil && version == archive.SchemaVersion, fmt.Sprintf("version %d", version))
 	add("fts", archive.HasFTS(db), "sqlite fts5")
 	add("permissions", checkPrivate(paths.DataDir) && checkPrivate(paths.CacheDir), "runtime dirs private")
+	wrapperCheck := wrapperToolsDoctorCheck()
+	add(wrapperCheck.Name, wrapperCheck.OK, wrapperCheck.Detail)
 	if checkArchive {
 		for _, check := range archiveDoctorChecks(db) {
 			add(check.Name, check.OK, check.Detail)
@@ -305,6 +307,40 @@ func archiveDoctorChecks(db *sql.DB) []doctorCheck {
 	}
 	add("archive_missing_scan_paths", missingScans == 0, fmt.Sprintf("count=%d", missingScans))
 	return checks
+}
+
+func wrapperToolsDoctorCheck() doctorCheck {
+	tools := []struct {
+		name string
+		hint string
+	}{
+		{"stationtrail", toolpath.HintStationTrail},
+		{"sourceharvest", toolpath.HintSourceHarvest},
+		{"opencode", "install the OpenCode CLI (opencode) to export sessions by ID; file-path imports work without it"},
+		{"discrawl", toolpath.HintCrawler("discrawl")},
+		{"gitcrawl", toolpath.HintCrawler("gitcrawl")},
+		{"slacrawl", toolpath.HintCrawler("slacrawl")},
+		{"graincrawl", toolpath.HintCrawler("graincrawl")},
+		{"notcrawl", toolpath.HintCrawler("notcrawl")},
+		{"mailcrawl", toolpath.HintCrawler("mailcrawl")},
+		{"telecrawl", toolpath.HintCrawler("telecrawl")},
+	}
+
+	var details []string
+	for _, tool := range tools {
+		path, err := exec.LookPath(tool.name)
+		if err == nil {
+			details = append(details, fmt.Sprintf("%s: found at %s", tool.name, path))
+		} else {
+			details = append(details, fmt.Sprintf("%s: missing (%s)", tool.name, tool.hint))
+		}
+	}
+
+	return doctorCheck{
+		Name:   "wrapper_tools",
+		OK:     true,
+		Detail: strings.Join(details, "\n"),
+	}
 }
 
 func firstMapValue(m map[string]any) any {
