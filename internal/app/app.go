@@ -228,6 +228,7 @@ func cmdDoctor(args []string, out, errw io.Writer) int {
 	asJSON := bools["json"]
 	checkMCP := bools["mcp"]
 	checkArchive := bools["archive"]
+	wrapperCheck, wrapperTools := wrapperToolsDoctorCheck()
 	db, paths, err := openMigrated()
 	checks := []map[string]any{}
 	add := func(name string, ok bool, detail string) {
@@ -236,7 +237,7 @@ func cmdDoctor(args []string, out, errw io.Writer) int {
 	add("paths", paths.DBPath != "", paths.DBPath)
 	if err != nil {
 		add("database", false, err.Error())
-		writeJSON(out, map[string]any{"ok": false, "checks": checks, "paths": paths})
+		writeJSON(out, map[string]any{"ok": false, "checks": checks, "paths": paths, "wrapper_tools": wrapperTools})
 		return 1
 	}
 	defer db.Close()
@@ -244,7 +245,6 @@ func cmdDoctor(args []string, out, errw io.Writer) int {
 	add("schema", versionErr == nil && version == archive.SchemaVersion, fmt.Sprintf("version %d", version))
 	add("fts", archive.HasFTS(db), "sqlite fts5")
 	add("permissions", checkPrivate(paths.DataDir) && checkPrivate(paths.CacheDir), "runtime dirs private")
-	wrapperCheck := wrapperToolsDoctorCheck()
 	add(wrapperCheck.Name, wrapperCheck.OK, wrapperCheck.Detail)
 	if checkArchive {
 		for _, check := range archiveDoctorChecks(db) {
@@ -256,7 +256,7 @@ func cmdDoctor(args []string, out, errw io.Writer) int {
 			add(check.Name, check.OK, check.Detail)
 		}
 	}
-	result := map[string]any{"ok": true, "checks": checks, "paths": paths}
+	result := map[string]any{"ok": true, "checks": checks, "paths": paths, "wrapper_tools": wrapperTools}
 	for _, c := range checks {
 		if c["ok"] == false {
 			result["ok"] = false
@@ -309,7 +309,14 @@ func archiveDoctorChecks(db *sql.DB) []doctorCheck {
 	return checks
 }
 
-func wrapperToolsDoctorCheck() doctorCheck {
+type wrapperToolDoctorEntry struct {
+	Name  string `json:"name"`
+	Found bool   `json:"found"`
+	Path  string `json:"path,omitempty"`
+	Hint  string `json:"hint,omitempty"`
+}
+
+func wrapperToolsDoctorCheck() (doctorCheck, []wrapperToolDoctorEntry) {
 	tools := []struct {
 		name string
 		hint string
@@ -327,12 +334,15 @@ func wrapperToolsDoctorCheck() doctorCheck {
 	}
 
 	var details []string
+	entries := make([]wrapperToolDoctorEntry, 0, len(tools))
 	for _, tool := range tools {
 		path, err := exec.LookPath(tool.name)
 		if err == nil {
 			details = append(details, fmt.Sprintf("%s: found at %s", tool.name, path))
+			entries = append(entries, wrapperToolDoctorEntry{Name: tool.name, Found: true, Path: path})
 		} else {
 			details = append(details, fmt.Sprintf("%s: missing (%s)", tool.name, tool.hint))
+			entries = append(entries, wrapperToolDoctorEntry{Name: tool.name, Hint: tool.hint})
 		}
 	}
 
@@ -340,7 +350,7 @@ func wrapperToolsDoctorCheck() doctorCheck {
 		Name:   "wrapper_tools",
 		OK:     true,
 		Detail: strings.Join(details, "\n"),
-	}
+	}, entries
 }
 
 func firstMapValue(m map[string]any) any {
