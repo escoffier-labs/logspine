@@ -1861,3 +1861,86 @@ func TestDoctorWrapperTools(t *testing.T) {
 		}
 	}
 }
+
+func TestDoctorJSONIncludesStructuredWrapperTools(t *testing.T) {
+	withTempHome(t)
+	runOK(t, "init")
+
+	binDir := t.TempDir()
+	stationtrail := filepath.Join(binDir, "stationtrail")
+	if err := os.WriteFile(stationtrail, []byte("#!/bin/sh\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+
+	got := runJSON(t, "doctor", "--json")
+	checks, ok := got["checks"].([]any)
+	if !ok || len(checks) == 0 {
+		t.Fatalf("doctor checks = %v, want non-empty array", got["checks"])
+	}
+	for _, raw := range checks {
+		check, ok := raw.(map[string]any)
+		if !ok {
+			t.Fatalf("doctor check = %T, want object", raw)
+		}
+		for _, field := range []string{"name", "ok", "detail"} {
+			if _, exists := check[field]; !exists {
+				t.Fatalf("doctor check missing %q: %v", field, check)
+			}
+		}
+	}
+
+	tools, ok := got["wrapper_tools"].([]any)
+	if !ok || len(tools) != 10 {
+		t.Fatalf("wrapper_tools = %v, want 10 entries", got["wrapper_tools"])
+	}
+	wantTools := map[string]bool{
+		"stationtrail": true, "sourceharvest": true, "opencode": true,
+		"discrawl": true, "gitcrawl": true, "slacrawl": true,
+		"graincrawl": true, "notcrawl": true, "mailcrawl": true, "telecrawl": true,
+	}
+	seen := map[string]bool{}
+	for _, raw := range tools {
+		tool, ok := raw.(map[string]any)
+		if !ok {
+			t.Fatalf("wrapper tool = %T, want object", raw)
+		}
+		name, _ := tool["name"].(string)
+		if name == "" {
+			t.Fatalf("wrapper tool missing name: %v", tool)
+		}
+		seen[name] = true
+		found, _ := tool["found"].(bool)
+		if found {
+			if path, _ := tool["path"].(string); path != stationtrail {
+				t.Fatalf("found stationtrail path = %q, want %q", path, stationtrail)
+			}
+			if _, exists := tool["hint"]; exists {
+				t.Fatalf("found tool includes hint: %v", tool)
+			}
+			continue
+		}
+		if _, exists := tool["path"]; exists {
+			t.Fatalf("missing tool includes path: %v", tool)
+		}
+		if hint, _ := tool["hint"].(string); hint == "" {
+			t.Fatalf("missing tool has no hint: %v", tool)
+		}
+	}
+	if len(seen) != len(wantTools) {
+		t.Fatalf("wrapper_tools missing expected entries: %v", seen)
+	}
+	for name := range wantTools {
+		if !seen[name] {
+			t.Fatalf("wrapper_tools missing %q: %v", name, seen)
+		}
+	}
+
+	code, plain, errText := run("doctor")
+	if code != 0 || errText != "" {
+		t.Fatalf("plain doctor failed: code=%d err=%q out=%s", code, errText, plain)
+	}
+	if strings.HasPrefix(plain, "{") || !strings.Contains(plain, "wrapper_tools ok=true") {
+		t.Fatalf("plain doctor output changed: %s", plain)
+	}
+}
