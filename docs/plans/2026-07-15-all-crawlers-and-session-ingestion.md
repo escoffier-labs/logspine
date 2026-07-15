@@ -263,7 +263,7 @@ brigade work verify run --target . --command "scripts/smoke_archive.sh" --captur
 
 Expected output: both commands exit 0; archive smoke prints `smoke archive ok`.
 
-- [ ] Commit:
+- [x] Commit:
 
 ```text
 git add scripts/smoke_archive.sh README.md CHANGELOG.md docs
@@ -276,8 +276,8 @@ git commit -m "docs: cover Grok Cursor and crawler contracts"
 - Modify: `docs/plans/2026-07-15-all-crawlers-and-session-ingestion.md`
 - Create: `.claude/memory-handoffs/2026-07-15-all-crawlers-and-session-ingestion.md`
 
-- [ ] Read the complete diff against the spec. Confirm no live native-session import command was run and no database, WAL, export, or raw-session files entered git status.
-- [ ] Run the required final checks fresh after the last edit:
+- [x] Read the complete diff against the spec. Confirm no live native-session import command was run and no database, WAL, export, or raw-session files entered git status.
+- [x] Run the required final checks fresh after the last edit:
 
 ```text
 brigade work verify run --target . --command "go vet ./..." --capture brigade-work
@@ -288,8 +288,8 @@ brigade work verify run --target . --command "scripts/smoke_archive.sh" --captur
 
 Expected result: all four exit 0.
 
-- [ ] Write and lint the memory handoff using `.claude/memory-handoffs/TEMPLATE.md`. Record observed Grok and Cursor formats, the Telecrawl 0.1.0 compatibility decision, external environment gaps, and exact verification receipts.
-- [ ] Mark every completed checkbox in this plan, run `git diff --check`, and commit the live plan. The handoff stays in its gitignored inbox for memory handoff ingestion:
+- [x] Write and lint the memory handoff using `.claude/memory-handoffs/TEMPLATE.md`. Record observed Grok and Cursor formats, the Telecrawl 0.1.0 compatibility decision, external environment gaps, and exact verification receipts.
+- [x] Mark every completed checkbox in this plan, run `git diff --check`, and commit the live plan. The handoff stays in its gitignored inbox for memory handoff ingestion:
 
 ```text
 git add docs/plans/2026-07-15-all-crawlers-and-session-ingestion.md
