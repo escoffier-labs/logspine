@@ -53,8 +53,8 @@ Verification: focused RED/GREEN tests per task, then `go vet ./...`, `go test ./
 - Modify: `internal/app/watch.go`
 - Modify: `internal/app/app_test.go`
 
-- [ ] Add the synthetic summary fixture with title `Synthetic Grok crawler audit`, model `grok-code-fast-1`, timestamps, branch, commit, workspace, and a fake session summary. Add chat lines for `system`, `user`, `assistant`, `reasoning`, and `tool_result`; content must use only invented project names and text.
-- [ ] Write `grok_test.go` with this failing behavior:
+- [x] Add the synthetic summary fixture with title `Synthetic Grok crawler audit`, model `grok-code-fast-1`, timestamps, branch, commit, workspace, and a fake session summary. Add chat lines for `system`, `user`, `assistant`, `reasoning`, and `tool_result`; content must use only invented project names and text.
+- [x] Write `grok_test.go` with this failing behavior:
 
 ```go
 func TestGenerateFixtureEmitsSummaryAndMessages(t *testing.T) {
@@ -74,8 +74,8 @@ func TestGenerateFixtureEmitsSummaryAndMessages(t *testing.T) {
 }
 ```
 
-- [ ] Add tests for `DefaultRoot`, `--limit`, `--since`, malformed chat JSON warnings, URL-decoded workspace metadata, and `AfterFile` scan callbacks.
-- [ ] Run RED through Brigade:
+- [x] Add tests for `DefaultRoot`, `--limit`, `--since`, malformed chat JSON warnings, URL-decoded workspace metadata, and `AfterFile` scan callbacks.
+- [x] Run RED through Brigade:
 
 ```text
 brigade work verify run --target . --command "go test ./internal/sources/grok" --capture brigade-work
@@ -83,10 +83,10 @@ brigade work verify run --target . --command "go test ./internal/sources/grok" -
 
 Expected failure: package `internal/sources/grok` does not exist.
 
-- [ ] Implement `grok.Generate` with the existing `sources.Options`, `PrepareFileScan`, `WriteRecord`, `TextFromAny`, `StableID`, `ApplyRedaction`, and `KeepTimestamp` helpers. Walk only `summary.json` and `chat_history.jsonl`; sort paths; use `url.PathUnescape` for the encoded workspace directory; count warnings per file; call `AfterFile` exactly once per candidate file.
-- [ ] Add Grok to `discoverSources`, `cmdImport`, `cmdAdapter`, `supportsNativeFastPath`, and `discoveredRoots`. Use `filepath.Join(home, ".grok", "sessions")` everywhere.
-- [ ] Add a CLI test that copies the synthetic fixture into `<temp HOME>/.grok/sessions`, runs `crawl sessions --json`, and finds `fixture crawl contract` through `sessions search --source grok`.
-- [ ] Run GREEN:
+- [x] Implement `grok.Generate` with the existing `sources.Options`, `PrepareFileScan`, `WriteRecord`, `TextFromAny`, `StableID`, `ApplyRedaction`, and `KeepTimestamp` helpers. Walk only `summary.json` and `chat_history.jsonl`; sort paths; use `url.PathUnescape` for the encoded workspace directory; count warnings per file; call `AfterFile` exactly once per candidate file.
+- [x] Add Grok to `discoverSources`, `cmdImport`, `cmdAdapter`, `supportsNativeFastPath`, and `discoveredRoots`. Use `filepath.Join(home, ".grok", "sessions")` everywhere.
+- [x] Add a CLI test that copies the synthetic fixture into `<temp HOME>/.grok/sessions`, runs `crawl sessions --json`, and finds `fixture crawl contract` through `sessions search --source grok`.
+- [x] Run GREEN:
 
 ```text
 brigade work verify run --target . --command "go test ./internal/sources/grok ./internal/app" --capture brigade-work
@@ -94,7 +94,7 @@ brigade work verify run --target . --command "go test ./internal/sources/grok ./
 
 Expected output: both packages report `ok`.
 
-- [ ] Commit:
+- [x] Commit:
 
 ```text
 git add internal/sources/grok testdata/harnesses/grok-sessions.fixture internal/app/app.go internal/app/watch.go internal/app/app_test.go

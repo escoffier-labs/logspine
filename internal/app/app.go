@@ -27,6 +27,7 @@ import (
 	"github.com/escoffier-labs/miseledger/internal/sources/claude"
 	"github.com/escoffier-labs/miseledger/internal/sources/codex"
 	"github.com/escoffier-labs/miseledger/internal/sources/cursor"
+	"github.com/escoffier-labs/miseledger/internal/sources/grok"
 	"github.com/escoffier-labs/miseledger/internal/sources/hermes"
 	"github.com/escoffier-labs/miseledger/internal/sources/openclaw"
 	"github.com/escoffier-labs/miseledger/internal/sources/opencode"
@@ -411,6 +412,7 @@ func discoverSources() []map[string]any {
 		{"hermes", filepath.Join(home, ".hermes", "sessions"), "native-json"},
 		{"opencode", opencode.DefaultRoot(), "native-json"},
 		{"cursor", cursor.DefaultRoot(), "native-cursor"},
+		{"grok", grok.DefaultRoot(), "native-jsonl"},
 	}
 	out := make([]map[string]any, 0, len(candidates))
 	for _, c := range candidates {
@@ -421,6 +423,8 @@ func discoverSources() []map[string]any {
 				exists = true
 				if c.kind == "cursor" {
 					count = countCursorSessions(c.root)
+				} else if c.kind == "grok" {
+					count, _ = grok.CountSessions(c.root)
 				} else if c.kind == "opencode" {
 					count = countOpenCodeExports(c.root)
 				} else {
@@ -975,7 +979,7 @@ func checkPrivate(path string) bool {
 
 func cmdImport(args []string, out, errw io.Writer) int {
 	if len(args) == 0 {
-		return fatalf(errw, "usage: miseledger import adapter|stationtrail|codex|openclaw|claude|hermes|opencode|cursor|chatgpt-export|claude-export <path>")
+		return fatalf(errw, "usage: miseledger import adapter|stationtrail|codex|openclaw|claude|hermes|opencode|cursor|grok|chatgpt-export|claude-export <path>")
 	}
 	switch args[0] {
 	case "adapter":
@@ -998,12 +1002,14 @@ func cmdImport(args []string, out, errw io.Writer) int {
 		return cmdImportNative("opencode", opencode.Generate, args[1:], out, errw)
 	case "cursor":
 		return cmdImportNative("cursor", cursor.Generate, args[1:], out, errw)
+	case "grok":
+		return cmdImportNative("grok", grok.Generate, args[1:], out, errw)
 	case "chatgpt-export":
 		return cmdImportNative("chatgpt", providerexports.GenerateChatGPT, args[1:], out, errw)
 	case "claude-export":
 		return cmdImportNative("claude-export", providerexports.GenerateClaude, args[1:], out, errw)
 	default:
-		return fatalf(errw, "usage: miseledger import adapter|discovered|stationtrail|sourceharvest|codex|openclaw|claude|hermes|opencode|cursor|chatgpt-export|claude-export <path>")
+		return fatalf(errw, "usage: miseledger import adapter|discovered|stationtrail|sourceharvest|codex|openclaw|claude|hermes|opencode|cursor|grok|chatgpt-export|claude-export <path>")
 	}
 }
 
@@ -1243,7 +1249,7 @@ func runStationTrailImport(db *sql.DB, sourceKind, sourcePath string, values map
 
 func cmdAdapter(args []string, out, errw io.Writer) int {
 	if len(args) == 0 {
-		return fatalf(errw, "usage: miseledger adapter codex|openclaw|claude|hermes|opencode|cursor <path-or-dir> --out <file|->")
+		return fatalf(errw, "usage: miseledger adapter codex|openclaw|claude|hermes|opencode|cursor|grok <path-or-dir> --out <file|->")
 	}
 	switch args[0] {
 	case "codex":
@@ -1258,8 +1264,10 @@ func cmdAdapter(args []string, out, errw io.Writer) int {
 		return cmdAdapterGenerate("opencode", opencode.Generate, args[1:], out, errw)
 	case "cursor":
 		return cmdAdapterGenerate("cursor", cursor.Generate, args[1:], out, errw)
+	case "grok":
+		return cmdAdapterGenerate("grok", grok.Generate, args[1:], out, errw)
 	default:
-		return fatalf(errw, "usage: miseledger adapter codex|openclaw|claude|hermes|opencode|cursor <path-or-dir> --out <file|->")
+		return fatalf(errw, "usage: miseledger adapter codex|openclaw|claude|hermes|opencode|cursor|grok <path-or-dir> --out <file|->")
 	}
 }
 
@@ -1468,7 +1476,7 @@ func nativeFastPathOptions(db *sql.DB, name string, opts sources.Options) (sourc
 
 func supportsNativeFastPath(name string) bool {
 	switch name {
-	case "codex", "openclaw", "claude", "hermes", "opencode", "cursor":
+	case "codex", "openclaw", "claude", "hermes", "opencode", "cursor", "grok":
 		return true
 	default:
 		return false

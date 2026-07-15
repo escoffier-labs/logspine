@@ -595,6 +595,29 @@ func TestCrawlCursorImportsFromDefaultRoot(t *testing.T) {
 	}
 }
 
+func TestCrawlSessionsImportsGrokFromDefaultRoot(t *testing.T) {
+	withTempHome(t)
+	runOK(t, "init")
+	fixtureRoot := repoPath(t, "testdata/harnesses/grok-sessions.fixture/%2Fworkspaces%2Fdemo-project/demo-session-001")
+	root := filepath.Join(os.Getenv("HOME"), ".grok", "sessions", "%2Fworkspaces%2Fdemo-project", "demo-session-001")
+	for _, name := range []string{"summary.json", "chat_history.jsonl"} {
+		raw, err := os.ReadFile(filepath.Join(fixtureRoot, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		mustWrite(t, filepath.Join(root, name), string(raw))
+	}
+
+	out := runJSON(t, "crawl", "sessions", "--json")
+	if out["inserted_items"].(float64) != 6 {
+		t.Fatalf("grok discovered import = %v", out)
+	}
+	got := runJSON(t, "sessions", "search", "fixture crawl contract", "--source", "grok", "--json")
+	if len(got["sessions"].([]any)) != 1 {
+		t.Fatalf("grok session search = %v", got)
+	}
+}
+
 func TestCrawlChatGPTExportZip(t *testing.T) {
 	withTempHome(t)
 	runOK(t, "init")
