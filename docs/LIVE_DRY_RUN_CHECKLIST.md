@@ -18,6 +18,7 @@ miseledger import claude ~/.claude/projects --dry-run --json
 miseledger import openclaw ~/.openclaw/agents --dry-run --json
 miseledger import opencode ~/.local/share/opencode --dry-run --json
 miseledger import hermes ~/.hermes/sessions --dry-run --json
+miseledger import grok ~/.grok/sessions --dry-run --json
 ```
 
 ## MiseLedger Native Scanners
@@ -28,6 +29,8 @@ miseledger import codex ~/.codex/sessions --dry-run --json
 miseledger import claude ~/.claude/projects --dry-run --json
 miseledger import openclaw ~/.openclaw/agents --dry-run --json
 miseledger import hermes ~/.hermes/sessions --dry-run --json
+miseledger import cursor ~/.config/Cursor/User --dry-run --json
+miseledger import grok ~/.grok/sessions --dry-run --json
 miseledger import discovered --dry-run --json
 ```
 

@@ -163,7 +163,7 @@ brigade work verify run --target . --command "go test ./internal/sources/cursor 
 
 Expected output: both packages report `ok`.
 
-- [ ] Commit:
+- [x] Commit:
 
 ```text
 git add internal/sources/cursor testdata/harnesses/cursor-conversations.fixture.sql internal/app/app.go internal/app/app_test.go
@@ -221,7 +221,7 @@ brigade work verify run --target . --command "go test ./internal/app -run 'TestC
 
 Expected output: `ok github.com/escoffier-labs/miseledger/internal/app`.
 
-- [ ] Commit:
+- [x] Commit:
 
 ```text
 git add internal/app/telecrawl.go internal/app/crawl.go internal/app/crawlexport.go internal/app/app_test.go
@@ -243,10 +243,10 @@ git commit -m "fix(crawl): support installed Telecrawl JSON output"
 - Modify: `docs/ROADMAP.md`
 - Modify: `docs/STATIONTRAIL_PARITY.md`
 
-- [ ] Add Grok fixture import and search to `scripts/smoke_archive.sh`. Add Cursor database smoke only if the script can create the SQL fixture with the existing `sqlite3` prerequisite; otherwise keep it in Go tests and state that boundary in `docs/INSTALL_SMOKE.md`.
-- [ ] Update every native-source list to include Grok. Document the current Cursor database path and retained legacy JSON support. Document Telegram's `telecrawl --json messages` compatibility route. Keep external-tool configuration examples explicit.
-- [ ] Add Unreleased changelog entries for Grok, current Cursor, complete wrapper tests, and Telecrawl 0.1.0 compatibility.
-- [ ] Run the public-writing checklist from `~/bin/writing-rules.md`, inspect the changed prose for private infrastructure or identity details, and run the whitespace check:
+- [x] Add Grok fixture import and search to `scripts/smoke_archive.sh`. Add Cursor database smoke only if the script can create the SQL fixture with the existing `sqlite3` prerequisite; otherwise keep it in Go tests and state that boundary in `docs/INSTALL_SMOKE.md`.
+- [x] Update every native-source list to include Grok. Document the current Cursor database path and retained legacy JSON support. Document Telegram's `telecrawl --json messages` compatibility route. Keep external-tool configuration examples explicit.
+- [x] Add Unreleased changelog entries for Grok, current Cursor, complete wrapper tests, and Telecrawl 0.1.0 compatibility.
+- [x] Run the public-writing checklist from `~/bin/writing-rules.md`, inspect the changed prose for private infrastructure or identity details, and run the whitespace check:
 
 ```text
 git diff --check
@@ -254,7 +254,7 @@ git diff --check
 
 Expected result: no output. Changed prose contains no private machine details or banned writing patterns.
 
-- [ ] Run focused documentation and smoke verification:
+- [x] Run focused documentation and smoke verification:
 
 ```text
 brigade work verify run --target . --command "scripts/check_docs_drift.sh" --capture brigade-work
@@ -282,10 +282,11 @@ git commit -m "docs: cover Grok Cursor and crawler contracts"
 ```text
 brigade work verify run --target . --command "go vet ./..." --capture brigade-work
 brigade work verify run --target . --command "go test ./..." --capture brigade-work
+brigade work verify run --target . --command "go build -o bin/miseledger ./cmd/miseledger" --capture brigade-work
 brigade work verify run --target . --command "scripts/smoke_archive.sh" --capture brigade-work
 ```
 
-Expected result: all three exit 0.
+Expected result: all four exit 0.
 
 - [ ] Write and lint the memory handoff using `.claude/memory-handoffs/TEMPLATE.md`. Record observed Grok and Cursor formats, the Telecrawl 0.1.0 compatibility decision, external environment gaps, and exact verification receipts.
 - [ ] Mark every completed checkbox in this plan, run `git diff --check`, and commit the live plan. The handoff stays in its gitignored inbox for memory handoff ingestion:
