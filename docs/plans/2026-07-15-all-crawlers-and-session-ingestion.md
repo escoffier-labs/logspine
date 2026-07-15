@@ -178,8 +178,8 @@ git commit -m "feat(import): read current Cursor conversation history"
 - Modify: `internal/app/crawlexport.go`
 - Modify: `internal/app/app_test.go`
 
-- [ ] Replace `TestCrawlExternalExporterWrappersIncludeGithubAndTelegram` with a table that covers Discrawl, Gitcrawl, Slacrawl, Graincrawl, Notcrawl, and Mailcrawl. Each fake binary checks the exact prefix, including `mailcrawl gmail export --out -`, emits one valid adapter line, and the test searches the inserted text by wrapper source kind.
-- [ ] Add a fake Telecrawl script that requires arguments `--json messages`, accepts `--limit`, `--chat`, and `--after`, and emits this public shape:
+- [x] Replace `TestCrawlExternalExporterWrappersIncludeGithubAndTelegram` with a table that covers Discrawl, Gitcrawl, Slacrawl, Graincrawl, Notcrawl, and Mailcrawl. Each fake binary checks the exact prefix, including `mailcrawl gmail export --out -`, emits one valid adapter line, and the test searches the inserted text by wrapper source kind.
+- [x] Add a fake Telecrawl script that requires arguments `--json messages`, accepts `--limit`, `--chat`, and `--after`, and emits this public shape:
 
 ```json
 [
@@ -201,8 +201,8 @@ git commit -m "feat(import): read current Cursor conversation history"
 ]
 ```
 
-- [ ] Add tests proving normal import, dry-run count, search, missing-tool preflight, non-zero stderr propagation, `--since` to `--after` mapping, and empty-media filtering.
-- [ ] Run RED:
+- [x] Add tests proving normal import, dry-run count, search, missing-tool preflight, non-zero stderr propagation, `--since` to `--after` mapping, and empty-media filtering.
+- [x] Run RED:
 
 ```text
 brigade work verify run --target . --command "go test ./internal/app -run 'TestCrawlExternal|TestCrawlTelegram'" --capture brigade-work
@@ -210,10 +210,10 @@ brigade work verify run --target . --command "go test ./internal/app -run 'TestC
 
 Expected failure: MiseLedger invokes `telecrawl export adapter --out -` instead of `telecrawl --json messages`.
 
-- [ ] Define `telecrawlMessage` with the public v0.1.0 JSON fields. Implement `cmdCrawlTelecrawl(args, out, errw)` to split MiseLedger flags, validate pass-through flags, require the binary before archive open, map `--since` to `--after`, execute with the existing timeout, decode the JSON array, convert messages to adapter records, and either count them for dry-run or call `ingest.ImportAdapterReader`.
-- [ ] Build text as `message.Text`, falling back to `media_title` and then `media_type`. Skip records with no searchable text. Use `message_id`, falling back to decimal `source_pk`, for stable item IDs. Use `ActorFromRole("telegram", role, "message")`, where `role` is `user` for `from_me` and `external` otherwise. Preserve sender and media fields in metadata.
-- [ ] Route `crawl telegram` directly to `cmdCrawlTelecrawl` and remove Telegram from `nativeExporters`. Keep Telecrawl in doctor wrapper-tool reporting.
-- [ ] Run GREEN:
+- [x] Define `telecrawlMessage` with the public v0.1.0 JSON fields. Implement `cmdCrawlTelecrawl(args, out, errw)` to split MiseLedger flags, validate pass-through flags, require the binary before archive open, map `--since` to `--after`, execute with the existing timeout, decode the JSON array, convert messages to adapter records, and either count them for dry-run or call `ingest.ImportAdapterReader`.
+- [x] Build text as `message.Text`, falling back to `media_title` and then `media_type`. Skip records with no searchable text. Use `message_id`, falling back to decimal `source_pk`, for stable item IDs. Use `ActorFromRole("telegram", role, "message")`, where `role` is `user` for `from_me` and `external` otherwise. Preserve sender and media fields in metadata.
+- [x] Route `crawl telegram` directly to `cmdCrawlTelecrawl` and remove Telegram from `nativeExporters`. Keep Telecrawl in doctor wrapper-tool reporting.
+- [x] Run GREEN:
 
 ```text
 brigade work verify run --target . --command "go test ./internal/app -run 'TestCrawlExternal|TestCrawlTelegram|TestMissingExternalTool|TestDoctorWrapperTools'" --capture brigade-work

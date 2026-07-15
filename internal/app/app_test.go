@@ -464,26 +464,28 @@ printf '{"source":"%s","path":"%s","records":1,"files":1,"warnings":[],"generate
 	}
 }
 
-func TestCrawlExternalExporterWrappersIncludeGithubAndTelegram(t *testing.T) {
+func TestCrawlExternalExporterWrappers(t *testing.T) {
 	withTempHome(t)
 	runOK(t, "init")
 	binDir := t.TempDir()
 	for _, tc := range []struct {
-		binary string
-		source string
-		text   string
+		binary, command, source, prefix, text string
 	}{
-		{"gitcrawl", "github", "gitcrawl wrapper fixture"},
-		{"telecrawl", "telegram", "telecrawl wrapper fixture"},
+		{"discrawl", "discord", "discord", "export adapter --out -", "discrawl wrapper fixture"},
+		{"gitcrawl", "github", "github", "export adapter --out -", "gitcrawl wrapper fixture"},
+		{"slacrawl", "slack", "slack", "export adapter --out -", "slacrawl wrapper fixture"},
+		{"graincrawl", "granola", "granola", "export adapter --out -", "graincrawl wrapper fixture"},
+		{"notcrawl", "notion", "notion", "export adapter --out -", "notcrawl wrapper fixture"},
+		{"mailcrawl", "gmail", "gmail", "gmail export --out -", "mailcrawl wrapper fixture"},
 	} {
 		script := filepath.Join(binDir, tc.binary)
 		body := fmt.Sprintf(`#!/bin/sh
-if [ "$1" != "export" ] || [ "$2" != "adapter" ] || [ "$3" != "--out" ] || [ "$4" != "-" ]; then
+if [ "$*" != %q ]; then
   echo "bad adapter export args: $*" >&2
   exit 1
 fi
 printf '{"schema":"miseledger.adapter.v1","source":{"kind":%q,"name":"Fixture"},"collection":{"external_id":%q,"kind":"messages","name":"Fixture"},"item":{"external_id":%q,"kind":"message","created_at":"2026-06-03T00:00:00Z","text":%q,"tags":["wrapper"]},"actor":{"external_id":%q,"type":"system","name":"fixture"},"artifacts":[],"links":[],"relations":[],"raw":{"format":"json","path":%q,"ordinal":1}}\n'
-`, tc.source, tc.source+":collection", tc.source+":item:1", tc.text, tc.source+":actor", tc.binary+".jsonl")
+`, tc.prefix, tc.source, tc.source+":collection", tc.source+":item:1", tc.text, tc.source+":actor", tc.binary+".jsonl")
 		if err := os.WriteFile(script, []byte(body), 0o700); err != nil {
 			t.Fatal(err)
 		}
@@ -491,13 +493,13 @@ printf '{"schema":"miseledger.adapter.v1","source":{"kind":%q,"name":"Fixture"},
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 
-	for _, tc := range []struct {
-		command string
-		source  string
-		query   string
-	}{
+	for _, tc := range []struct{ command, source, query string }{
+		{"discord", "discord", "discrawl wrapper"},
 		{"github", "github", "gitcrawl wrapper"},
-		{"telegram", "telegram", "telecrawl wrapper"},
+		{"slack", "slack", "slacrawl wrapper"},
+		{"granola", "granola", "graincrawl wrapper"},
+		{"notion", "notion", "notcrawl wrapper"},
+		{"gmail", "gmail", "mailcrawl wrapper"},
 	} {
 		out := runJSON(t, "crawl", tc.command, "--json")
 		if out["source_kind"] != tc.source || out["inserted_items"].(float64) != 1 {
@@ -507,6 +509,70 @@ printf '{"schema":"miseledger.adapter.v1","source":{"kind":%q,"name":"Fixture"},
 		if len(search["results"].([]any)) != 1 {
 			t.Fatalf("crawl %s search failed: %v", tc.command, search)
 		}
+	}
+}
+
+func writeFakeTelecrawl(t *testing.T, binDir, body string) {
+	t.Helper()
+	script := filepath.Join(binDir, "telecrawl")
+	if err := os.WriteFile(script, []byte(body), 0o700); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCrawlTelegramCompatibilityImportDryRunAndFlags(t *testing.T) {
+	withTempHome(t)
+	runOK(t, "init")
+	binDir := t.TempDir()
+	argsFile := filepath.Join(t.TempDir(), "args")
+	t.Setenv("TELECRAWL_ARGS_FILE", argsFile)
+	writeFakeTelecrawl(t, binDir, `#!/bin/sh
+printf '%s\n' "$*" > "$TELECRAWL_ARGS_FILE"
+if [ "$1" != "--json" ] || [ "$2" != "messages" ]; then
+  echo "unexpected telecrawl args: $*" >&2
+  exit 1
+fi
+printf '%s\n' '[{"source_pk":41,"chat_jid":"fixture-chat","chat_name":"Fixture Telegram Chat","message_id":"fixture-message-41","sender_jid":"fixture-sender","sender_name":"Fixture Sender","timestamp":"2026-07-15T12:00:00Z","from_me":false,"text":"telecrawl compatibility fixture","raw_type":1,"message_type":"text","media_type":"","media_title":""},{"source_pk":42,"chat_jid":"fixture-chat","chat_name":"Fixture Telegram Chat","message_id":"fixture-message-42","timestamp":"2026-07-15T12:01:00Z","from_me":true,"text":"","media_type":"","media_title":""}]'
+`)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	out := runJSON(t, "crawl", "telegram", "--since", "2026-07-01", "--limit", "7", "--chat", "Fixture", "--json")
+	if out["source_kind"] != "telegram" || out["inserted_items"].(float64) != 1 {
+		t.Fatalf("crawl telegram = %v", out)
+	}
+	search := runJSON(t, "search", "compatibility fixture", "--source", "telegram", "--json")
+	if len(search["results"].([]any)) != 1 {
+		t.Fatalf("telegram search = %v", search)
+	}
+	args, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotArgs := string(args)
+	for _, want := range []string{"--json messages", "--after 2026-07-01", "--limit 7", "--chat Fixture"} {
+		if !strings.Contains(gotArgs, want) {
+			t.Fatalf("telecrawl args %q missing %q", gotArgs, want)
+		}
+	}
+	if strings.Contains(gotArgs, "--since") {
+		t.Fatalf("telecrawl received unmapped --since: %q", gotArgs)
+	}
+
+	dry := runJSON(t, "crawl", "telegram", "--dry-run", "--json")
+	if dry["dry_run"] != true || dry["generated_records"].(float64) != 1 {
+		t.Fatalf("telegram dry run = %v", dry)
+	}
+}
+
+func TestCrawlTelegramPropagatesExporterStderr(t *testing.T) {
+	withTempHome(t)
+	runOK(t, "init")
+	binDir := t.TempDir()
+	writeFakeTelecrawl(t, binDir, "#!/bin/sh\necho 'fixture telecrawl failure' >&2\nexit 23\n")
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	code, _, stderr := run("crawl", "telegram", "--dry-run")
+	if code == 0 || !strings.Contains(stderr, "fixture telecrawl failure") {
+		t.Fatalf("code=%d stderr=%q", code, stderr)
 	}
 }
 
@@ -1862,6 +1928,13 @@ func TestMissingExternalToolDiagnostics(t *testing.T) {
 			tool:     "gitcrawl",
 			context:  "crawl github",
 			hintPart: "install gitcrawl",
+		},
+		{
+			name:     "crawl telegram dry-run",
+			args:     []string{"crawl", "telegram", "--dry-run"},
+			tool:     "telecrawl",
+			context:  "crawl telegram",
+			hintPart: "install telecrawl",
 		},
 	}
 	for _, tc := range cases {
