@@ -22,7 +22,7 @@ Convenience alternative, mutable `HEAD` installer:
 curl -fsSL https://raw.githubusercontent.com/escoffier-labs/miseledger/HEAD/install.sh | sh
 ```
 
-Optional domain crawler binaries such as `discrawl`, `gitcrawl`, `slacrawl`, `graincrawl`, `notcrawl`, `mailcrawl`, and `telecrawl` can feed MiseLedger through `miseledger crawl <domain>`. Adapter-emitting crawlers can also produce files for `miseledger import adapter`. Session logs, local files, Markdown, HTML, JSON, JSONL, and git history are covered by built-in crawl and import commands.
+Optional domain crawler binaries such as `discrawl`, `gitcrawl`, `slacrawl`, `graincrawl`, `notcrawl`, `mailcrawl`, and `telecrawl` can feed MiseLedger through `miseledger crawl <domain>`. Adapter-emitting crawlers can also produce files for `miseledger import adapter`. Current Gitcrawl releases are read through `gitcrawl sync` plus `gitcrawl threads --json`. Session logs, local files, Markdown, HTML, JSON, JSONL, and git history are covered by built-in crawl and import commands.
 
 ## Initialize
 

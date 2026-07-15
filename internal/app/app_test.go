@@ -472,7 +472,6 @@ func TestCrawlExternalExporterWrappers(t *testing.T) {
 		binary, command, source, prefix, text string
 	}{
 		{"discrawl", "discord", "discord", "export adapter --out -", "discrawl wrapper fixture"},
-		{"gitcrawl", "github", "github", "export adapter --out -", "gitcrawl wrapper fixture"},
 		{"slacrawl", "slack", "slack", "export adapter --out -", "slacrawl wrapper fixture"},
 		{"graincrawl", "granola", "granola", "export adapter --out -", "graincrawl wrapper fixture"},
 		{"notcrawl", "notion", "notion", "export adapter --out -", "notcrawl wrapper fixture"},
@@ -495,7 +494,6 @@ printf '{"schema":"miseledger.adapter.v1","source":{"kind":%q,"name":"Fixture"},
 
 	for _, tc := range []struct{ command, source, query string }{
 		{"discord", "discord", "discrawl wrapper"},
-		{"github", "github", "gitcrawl wrapper"},
 		{"slack", "slack", "slacrawl wrapper"},
 		{"granola", "granola", "graincrawl wrapper"},
 		{"notion", "notion", "notcrawl wrapper"},
@@ -508,6 +506,66 @@ printf '{"schema":"miseledger.adapter.v1","source":{"kind":%q,"name":"Fixture"},
 		search := runJSON(t, "search", tc.query, "--source", tc.source, "--json")
 		if len(search["results"].([]any)) != 1 {
 			t.Fatalf("crawl %s search failed: %v", tc.command, search)
+		}
+	}
+}
+
+func TestCrawlGithubCurrentGitcrawlCompatibility(t *testing.T) {
+	withTempHome(t)
+	runOK(t, "init")
+	binDir := t.TempDir()
+	argsFile := filepath.Join(t.TempDir(), "gitcrawl-args")
+	t.Setenv("GITCRAWL_ARGS_FILE", argsFile)
+	script := filepath.Join(binDir, "gitcrawl")
+	body := `#!/bin/sh
+printf '%s\n' "$*" >> "$GITCRAWL_ARGS_FILE"
+case "$*" in
+  "sync escoffier-labs/miseledger --state all --numbers 34 --json")
+    printf '{"repository":"escoffier-labs/miseledger","threads_synced":1,"pull_requests_synced":1,"numbers":[34]}\n'
+    exit 0
+    ;;
+  "threads escoffier-labs/miseledger --include-closed --numbers 34 --limit 1 --json")
+    printf '{"repository":"escoffier-labs/miseledger","threads":[{"number":34,"kind":"pull_request","state":"open","title":"Add Grok Cursor and crawler ingestion coverage","body":"gitcrawl current compatibility fixture","author_login":"fixture-user","author_type":"User","html_url":"https://github.com/escoffier-labs/miseledger/pull/34","is_draft":true,"created_at_gh":"2026-07-15T20:06:17Z","updated_at_gh":"2026-07-15T20:06:24Z"}]}\n'
+    exit 0
+    ;;
+  "export adapter --out - --repo escoffier-labs/miseledger --state all --numbers 34 --limit 1")
+    echo 'unknown command "export"' >&2
+    exit 1
+    ;;
+  *)
+    echo "unexpected gitcrawl args: $*" >&2
+    exit 1
+    ;;
+esac
+`
+	if err := os.WriteFile(script, []byte(body), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	dry := runJSON(t, "crawl", "github", "--repo", "escoffier-labs/miseledger", "--state", "all", "--numbers", "34", "--limit", "1", "--dry-run", "--json")
+	if dry["generated_records"].(float64) != 1 {
+		t.Fatalf("crawl github dry-run = %v, want one generated record", dry)
+	}
+
+	out := runJSON(t, "crawl", "github", "--repo", "escoffier-labs/miseledger", "--state", "all", "--numbers", "34", "--limit", "1", "--json")
+	if out["source_kind"] != "github" || out["inserted_items"].(float64) != 1 {
+		t.Fatalf("crawl github import = %v, want one github item", out)
+	}
+	search := runJSON(t, "search", "gitcrawl current compatibility", "--source", "github", "--json")
+	if len(search["results"].([]any)) != 1 {
+		t.Fatalf("crawl github search failed: %v", search)
+	}
+	gotArgs, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"sync escoffier-labs/miseledger --state all --numbers 34 --json",
+		"threads escoffier-labs/miseledger --include-closed --numbers 34 --limit 1 --json",
+	} {
+		if !strings.Contains(string(gotArgs), want) {
+			t.Fatalf("gitcrawl args missing %q in:\n%s", want, gotArgs)
 		}
 	}
 }
@@ -1924,7 +1982,7 @@ func TestMissingExternalToolDiagnostics(t *testing.T) {
 		},
 		{
 			name:     "crawl github dry-run",
-			args:     []string{"crawl", "github", "--dry-run"},
+			args:     []string{"crawl", "github", "--repo", "escoffier-labs/miseledger", "--dry-run"},
 			tool:     "gitcrawl",
 			context:  "crawl github",
 			hintPart: "install gitcrawl",

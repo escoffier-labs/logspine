@@ -347,6 +347,7 @@ External crawler binaries can be called through domain wrappers when installed o
 ```bash
 miseledger crawl discord --limit 100 --json
 miseledger crawl github --repo escoffier-labs/miseledger --json
+miseledger crawl github --repo escoffier-labs/miseledger --numbers 34,35 --limit 2 --json
 miseledger crawl slack --workspace T123 --json
 miseledger crawl granola --json
 miseledger crawl notion --json
@@ -357,7 +358,9 @@ miseledger import adapter discrawl.adapter.jsonl --json
 
 Archived StationTrail and SourceHarvest exports are still ordinary `miseledger.adapter.v1` JSONL, so already-generated files can be imported with `miseledger import adapter`.
 
-Discord, GitHub, Slack, Granola, Notion, and Gmail call each crawler's adapter exporter. Telegram calls `telecrawl --json messages`; MiseLedger converts the returned message array locally and maps `--since` to Telecrawl's `--after` flag.
+Discord, Slack, Granola, Notion, and Gmail call each crawler's adapter exporter. GitHub calls current Gitcrawl's `sync` and `threads --json` commands, then converts those thread rows locally. Telegram calls `telecrawl --json messages`; MiseLedger converts the returned message array locally and maps `--since` to Telecrawl's `--after` flag.
+
+Gmail remains explicit about account selection. Gog may have configured accounts, but MiseLedger requires `--account` so a crawl cannot silently pick a mailbox. Use `--metadata-only`, a narrow `--query`, and `--dry-run` first; `scripts/smoke_gmail_metadata.sh` does exactly that with the first configured Gog account and does not import mail.
 
 For adapter files that already carry a source kind, leave `--source` off. If you must override it, use the wrapper's canonical kind: `discord`, `github`, `slack`, `granola`, `notion`, `gmail`, or `telegram`. MiseLedger warns when the override disagrees with embedded record kinds because that creates a separate dedupe namespace.
 

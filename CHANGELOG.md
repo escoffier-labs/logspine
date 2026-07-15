@@ -20,6 +20,8 @@ Releases before this changelog was started are on the [releases page](https://gi
 
 ### Fixed
 
+- `crawl github` now supports current Gitcrawl releases that expose
+  `sync` and `threads --json` but not `export adapter`.
 - `crawl telegram` now converts Telecrawl's public `--json messages` output to
   adapter records. This supports installed Telecrawl 0.1.0 builds that do not
   provide an `export adapter` command.

@@ -112,6 +112,7 @@ External crawler binaries can emit adapter JSONL directly or run through MiseLed
 ```bash
 miseledger crawl discord --limit 100 --json
 miseledger crawl github --repo escoffier-labs/miseledger --json
+miseledger crawl github --repo escoffier-labs/miseledger --numbers 34,35 --limit 2 --json
 miseledger crawl slack --workspace T123 --json
 miseledger crawl granola --json
 miseledger crawl notion --json
@@ -120,7 +121,7 @@ miseledger crawl telegram --chat "MiseLedger" --json
 miseledger import adapter discrawl.adapter.jsonl --json
 ```
 
-The Discord, GitHub, Slack, Granola, Notion, and Gmail wrappers consume adapter JSONL emitted by their crawler binaries. Telegram is a compatibility route: MiseLedger calls `telecrawl --json messages` and converts the public message array to adapter records locally.
+The Discord, Slack, Granola, Notion, and Gmail wrappers consume adapter JSONL emitted by their crawler binaries. GitHub is a current-Gitcrawl compatibility route: MiseLedger calls `gitcrawl sync` and `gitcrawl threads --json`, then converts returned issue and pull-request rows locally. Telegram is also a compatibility route: MiseLedger calls `telecrawl --json messages` and converts the public message array to adapter records locally.
 
 The archived StationTrail and SourceHarvest repositories previously emitted this same adapter contract. Already-generated adapter JSONL files from those tools remain importable with `miseledger import adapter`.
 
