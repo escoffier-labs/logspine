@@ -110,8 +110,8 @@ git commit -m "feat(import): add Grok session ingestion"
 - Modify: `internal/app/app.go`
 - Modify: `internal/app/app_test.go`
 
-- [ ] Add a SQL fixture that creates `conversations` and an FTS5 `conversation_fts`, then inserts 2 local conversations with fake IDs, titles, bodies, millisecond timestamps, archive states, and root fingerprints.
-- [ ] Add this test helper and failing test:
+- [x] Add a SQL fixture that creates `conversations` and an FTS5 `conversation_fts`, then inserts 2 local conversations with fake IDs, titles, bodies, millisecond timestamps, archive states, and root fingerprints.
+- [x] Add this test helper and failing test:
 
 ```go
 func buildConversationFixture(t *testing.T) string {
@@ -142,9 +142,9 @@ func TestGenerateConversationSearchDatabase(t *testing.T) {
 }
 ```
 
-- [ ] Add RED tests for a direct database path, `--since`, `--limit`, missing required tables as warnings, read-only mode, and WAL scan-target selection.
-- [ ] Change `TestDefaultRootRespectsXDG` to expect `/tmp/xdg/Cursor/User` on Linux. Add a platform helper test for Linux, macOS, and Windows path rules without changing the process OS.
-- [ ] Run RED:
+- [x] Add RED tests for a direct database path, `--since`, `--limit`, missing required tables as warnings, read-only mode, and WAL scan-target selection.
+- [x] Change `TestDefaultRootRespectsXDG` to expect `/tmp/xdg/Cursor/User` on Linux. Add a platform helper test for Linux, macOS, and Windows path rules without changing the process OS.
+- [x] Run RED:
 
 ```text
 brigade work verify run --target . --command "go test ./internal/sources/cursor" --capture brigade-work
@@ -152,10 +152,10 @@ brigade work verify run --target . --command "go test ./internal/sources/cursor"
 
 Expected failure: 0 database records and the old lowercase default root.
 
-- [ ] Extend `cursor.Generate` to recognize a direct `conversation-search.db`, a Cursor user-data root containing `globalStorage/conversation-search.db`, and the existing legacy JSON layout. Open SQLite with `mode=ro`; query only the six named columns; convert `updated_at` from seconds or milliseconds; emit stable IDs `cursor:conversation:<id>` and `cursor:conversation-body:<id>`; apply redaction before writing.
-- [ ] Use `conversation-search.db-wal` as the `PrepareFileScan` target when it exists. Keep `Raw.Path` and `source_file` on the main database. Treat `no such table` as one warning and a successful zero-record result; return other open/query failures.
-- [ ] Update `countCursorSessions` to count rows in the current database without returning titles or bodies. Update the app default-root test so `crawl cursor` builds a synthetic database under the current user-data root and proves its body is searchable.
-- [ ] Run GREEN:
+- [x] Extend `cursor.Generate` to recognize a direct `conversation-search.db`, a Cursor user-data root containing `globalStorage/conversation-search.db`, and the existing legacy JSON layout. Open SQLite with `mode=ro`; query only the six named columns; convert `updated_at` from seconds or milliseconds; emit stable IDs `cursor:conversation:<id>` and `cursor:conversation-body:<id>`; apply redaction before writing.
+- [x] Use `conversation-search.db-wal` as the `PrepareFileScan` target when it exists. Keep `Raw.Path` and `source_file` on the main database. Treat `no such table` as one warning and a successful zero-record result; return other open/query failures.
+- [x] Update `countCursorSessions` to count rows in the current database without returning titles or bodies. Update the app default-root test so `crawl cursor` builds a synthetic database under the current user-data root and proves its body is searchable.
+- [x] Run GREEN:
 
 ```text
 brigade work verify run --target . --command "go test ./internal/sources/cursor ./internal/app" --capture brigade-work

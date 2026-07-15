@@ -422,7 +422,7 @@ func discoverSources() []map[string]any {
 			if _, err := os.Stat(c.root); err == nil {
 				exists = true
 				if c.kind == "cursor" {
-					count = countCursorSessions(c.root)
+					count, _ = cursor.CountSessions(c.root)
 				} else if c.kind == "grok" {
 					count, _ = grok.CountSessions(c.root)
 				} else if c.kind == "opencode" {
@@ -447,27 +447,6 @@ func discoverSources() []map[string]any {
 		})
 	}
 	return out
-}
-
-// countCursorSessions counts discoverable Cursor chat directories plus a
-// prompt-history file, for the informational `sources discover` view.
-func countCursorSessions(root string) int {
-	count := 0
-	if fileExists(filepath.Join(root, "prompt_history.json")) {
-		count++
-	}
-	for _, sub := range []string{"chats", "acp-sessions"} {
-		entries, err := os.ReadDir(filepath.Join(root, sub))
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			if e.IsDir() {
-				count++
-			}
-		}
-	}
-	return count
 }
 
 func countOpenCodeExports(root string) int {

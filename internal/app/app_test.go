@@ -571,28 +571,38 @@ func TestSessionsListAndSearch(t *testing.T) {
 func TestCrawlCursorImportsFromDefaultRoot(t *testing.T) {
 	withTempHome(t)
 	runOK(t, "init")
-	// withTempHome points XDG_CONFIG_HOME at <home>/.config, so the default
-	// Cursor root is <home>/.config/cursor; `crawl cursor` finds it with no path.
-	root := filepath.Join(os.Getenv("XDG_CONFIG_HOME"), "cursor")
-	mustWrite(t, filepath.Join(root, "prompt_history.json"), `["fix the auth timeout bug","release audit checklist"]`)
-	mustWrite(t, filepath.Join(root, "chats", "abc123", "meta.json"), `{"id":"abc123","title":"Auth timeout investigation","createdAt":"2026-06-01T00:00:00Z"}`)
+	root := filepath.Join(os.Getenv("XDG_CONFIG_HOME"), "Cursor", "User")
+	dbPath := filepath.Join(root, "globalStorage", "conversation-search.db")
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture, err := os.ReadFile(repoPath(t, "testdata/harnesses/cursor-conversations.fixture.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(string(fixture)); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	runOK(t, "crawl", "cursor", "--json")
 
-	sessions := runJSON(t, "sessions", "search", "auth timeout", "--source", "cursor", "--json")
+	sessions := runJSON(t, "sessions", "search", "migration checklist", "--source", "cursor", "--json")
 	hits := sessions["sessions"].([]any)
 	if len(hits) != 1 {
 		t.Fatalf("cursor session search = %v", sessions)
 	}
 	hit := hits[0].(map[string]any)
-	if hit["raw_path"] == "" || !strings.Contains(hit["snippet"].(string), "Auth") {
+	if hit["raw_path"] != dbPath || !strings.Contains(hit["snippet"].(string), "migration") {
 		t.Fatalf("cursor session hit missing locator/snippet: %v", hit)
 	}
 
-	prompts := runJSON(t, "search", "release audit", "--source", "cursor", "--json")
-	if len(prompts["results"].([]any)) == 0 {
-		t.Fatalf("cursor prompt-history search returned nothing: %v", prompts)
-	}
 }
 
 func TestCrawlSessionsImportsGrokFromDefaultRoot(t *testing.T) {
