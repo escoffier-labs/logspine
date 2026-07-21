@@ -28,7 +28,7 @@
 </p>
 
 > [!IMPORTANT]
-> The unified distribution moved to [escoffier-labs/brigade](https://github.com/escoffier-labs/brigade) starting with [Brigade v0.25.0](https://github.com/escoffier-labs/brigade/releases/tag/v0.25.0). Install `brigade-cli` and run `brigade setup`, which installs the managed `miseledger` and `sessionfind` compatibility binaries. The standalone install instructions below remain the one-release compatibility fallback. This repository is a frozen source-history mirror. New feature work belongs in Brigade. Security and release-integrity fixes may still land in this mirror during Phase 4A. `master` will not be rewritten or force-pushed. Archival remains unauthorized during [Phase 4A](https://github.com/escoffier-labs/brigade/blob/main/docs/phase-4a-compatibility-and-archive.md).
+> **Archived mirror:** MiseLedger lives in [escoffier-labs/brigade](https://github.com/escoffier-labs/brigade) (source under `engines/evidence-ledger`). Install `brigade-cli` and run `brigade setup`, which installs the managed `miseledger` and `sessionfind` binaries and records their absolute paths for MCP clients. This repository is a frozen source-history mirror kept for the import commit map. `master` was never rewritten or force-pushed. The compatibility window was compressed by maintainer decision on 2026-07-21 (see the [phase-4a policy](https://github.com/escoffier-labs/brigade/blob/main/docs/phase-4a-compatibility-and-archive.md)). Report issues on the [Brigade tracker](https://github.com/escoffier-labs/brigade/issues).
 
 ## Install
 
