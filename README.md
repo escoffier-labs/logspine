@@ -27,6 +27,9 @@
   <img src="https://shieldcn.dev/badge/license-MIT-green.svg" alt="MIT license">
 </p>
 
+> [!IMPORTANT]
+> The unified distribution moved to [escoffier-labs/brigade](https://github.com/escoffier-labs/brigade) starting with [Brigade v0.25.0](https://github.com/escoffier-labs/brigade/releases/tag/v0.25.0). Install `brigade-cli` and run `brigade setup`, which installs the managed `miseledger` and `sessionfind` compatibility binaries. The standalone install instructions below remain the one-release compatibility fallback. This repository is a frozen source-history mirror. New feature work belongs in Brigade. Security and release-integrity fixes may still land in this mirror during Phase 4A. `master` will not be rewritten or force-pushed. Archival remains unauthorized during [Phase 4A](https://github.com/escoffier-labs/brigade/blob/main/docs/phase-4a-compatibility-and-archive.md).
+
 ## Install
 
 ```bash
